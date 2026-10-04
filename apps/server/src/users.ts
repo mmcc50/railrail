@@ -61,7 +61,7 @@ export function seedDefaultClient(): void {
     | { id: number }
     | undefined;
   createUser({
-    email: "sample-user",
+    email: "Default",
     dataLimit: 0,
     ipLimit: 0,
     expireDays: 0,

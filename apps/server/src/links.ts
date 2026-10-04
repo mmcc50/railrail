@@ -8,6 +8,7 @@
  * branding, or the embedded authorship identifiers is prohibited.
  * Watermark: sr-icubaby-2025-9f4c1a7e
  */
+import { configName } from "./brand.js";
 import { getSetting } from "./db.js";
 import type { Inbound, UserWithInbounds } from "./types.js";
 
@@ -18,8 +19,9 @@ interface LinkContext {
   inbound: Inbound;
 }
 
-function label(inbound: Inbound): string {
-  return `icubaby/SideRail - ${inbound.tag}`;
+/** Config remark shown by client apps: 𝗦𝗶𝗱𝗲𝗥𝗮𝗶𝗹 - <client name> */
+function label(user: UserWithInbounds): string {
+  return configName(user.email);
 }
 
 function commonQuery(ctx: LinkContext): Record<string, string> {
@@ -51,14 +53,14 @@ function qs(params: Record<string, string>): string {
 function vlessLink(ctx: LinkContext): string {
   const { user, address } = ctx;
   const query = qs({ ...commonQuery(ctx), encryption: "none" });
-  return `vless://${user.uuid}@${address}:443?${query}#${encodeURIComponent(label(ctx.inbound))}`;
+  return `vless://${user.uuid}@${address}:443?${query}#${encodeURIComponent(label(user))}`;
 }
 
 function trojanLink(ctx: LinkContext): string {
   const { user, address } = ctx;
   const query = qs(commonQuery(ctx));
   return `trojan://${encodeURIComponent(user.password)}@${address}:443?${query}#${encodeURIComponent(
-    label(ctx.inbound),
+    label(user),
   )}`;
 }
 
@@ -67,7 +69,7 @@ function vmessLink(ctx: LinkContext): string {
   const isXhttp = inbound.transport === "xhttp";
   const obj = {
     v: "2",
-    ps: label(inbound),
+    ps: label(user),
     add: address,
     port: "443",
     id: user.uuid,

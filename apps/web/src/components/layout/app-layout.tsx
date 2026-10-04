@@ -140,54 +140,56 @@ export function AppLayout() {
           <div className="px-2 py-2">
             <Brand />
           </div>
-          <div className="mt-6 flex-1">
+          <div className="mt-6 min-h-0 flex-1 overflow-y-auto overscroll-contain pr-1">
             <NavItems can={can} isOwner={isOwner} t={t as never} />
           </div>
-          <a
-            href={GITHUB_URL}
-            target="_blank"
-            rel="noreferrer"
-            className="mb-2 flex items-center justify-between gap-2 rounded-base border-2 border-border bg-bg/50 px-3 py-2.5 font-heading text-sm text-text/80 transition-all hover:bg-main hover:text-mtext hover:neo-shadow"
-          >
-            <span className="flex items-center gap-2">
-              <Github className="h-5 w-5" />GitHub</span>
-            <StarCount />
-          </a>
-          <a
-            href={TELEGRAM_URL}
-            target="_blank"
-            rel="noreferrer"
-            className="mb-2 flex items-center justify-between gap-2 rounded-base border-2 border-border bg-bg/50 px-3 py-2.5 font-heading text-sm text-text/80 transition-all hover:bg-main hover:text-mtext hover:neo-shadow"
-          >
-            <span className="flex items-center gap-2">
-              <Send className="h-5 w-5" />Telegram</span>
-          </a>
-          <a
-            href={`${GITHUB_URL}/releases`}
-            target="_blank"
-            rel="noreferrer"
-            className="mb-3 flex items-center justify-between gap-2 rounded-base border-2 border-border bg-bg/50 px-3 py-2.5 font-heading text-sm text-text/80 transition-all hover:bg-main hover:text-mtext hover:neo-shadow"
-          >
-            <span className="flex items-center gap-2">
-              <Tag className="h-5 w-5" />{t("version")}</span>
-            <span className="text-xs text-text/60">v{PANEL_VERSION}</span>
-          </a>
-          <div className="mb-3 flex items-center gap-1 rounded-base border-2 border-border bg-bg/50 p-1">
-            <Languages className="ml-1 h-4 w-4 shrink-0 text-text/50" />
-            {LANGUAGES.map((l) => (
-              <button
-                key={l.code}
-                onClick={() => changeLang(l.code)}
-                className={cn(
-                  "flex-1 rounded-[4px] px-1 py-1.5 text-xs font-heading transition-colors",
-                  lang === l.code ? "bg-main text-mtext" : "hover:bg-main/15",
-                )}
-              >
-                {l.label}
-              </button>
-            ))}
+          <div className="mt-4 shrink-0">
+            <a
+              href={GITHUB_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="mb-2 flex items-center justify-between gap-2 rounded-base border-2 border-border bg-bg/50 px-3 py-2.5 font-heading text-sm text-text/80 transition-all hover:bg-main hover:text-mtext hover:neo-shadow"
+            >
+              <span className="flex items-center gap-2">
+                <Github className="h-5 w-5" />GitHub</span>
+              <StarCount />
+            </a>
+            <a
+              href={TELEGRAM_URL}
+              target="_blank"
+              rel="noreferrer"
+              className="mb-2 flex items-center justify-between gap-2 rounded-base border-2 border-border bg-bg/50 px-3 py-2.5 font-heading text-sm text-text/80 transition-all hover:bg-main hover:text-mtext hover:neo-shadow"
+            >
+              <span className="flex items-center gap-2">
+                <Send className="h-5 w-5" />Telegram</span>
+            </a>
+            <a
+              href={`${GITHUB_URL}/releases`}
+              target="_blank"
+              rel="noreferrer"
+              className="mb-3 flex items-center justify-between gap-2 rounded-base border-2 border-border bg-bg/50 px-3 py-2.5 font-heading text-sm text-text/80 transition-all hover:bg-main hover:text-mtext hover:neo-shadow"
+            >
+              <span className="flex items-center gap-2">
+                <Tag className="h-5 w-5" />{t("version")}</span>
+              <span className="text-xs text-text/60">v{PANEL_VERSION}</span>
+            </a>
+            <div className="mb-3 flex items-center gap-1 rounded-base border-2 border-border bg-bg/50 p-1">
+              <Languages className="ml-1 h-4 w-4 shrink-0 text-text/50" />
+              {LANGUAGES.map((l) => (
+                <button
+                  key={l.code}
+                  onClick={() => changeLang(l.code)}
+                  className={cn(
+                    "flex-1 rounded-[4px] px-1 py-1.5 text-xs font-heading transition-colors",
+                    lang === l.code ? "bg-main text-mtext" : "hover:bg-main/15",
+                  )}
+                >
+                  {l.label}
+                </button>
+              ))}
+            </div>
+            <SidebarFooter username={username} role={admin?.role} onLogout={logout} />
           </div>
-          <SidebarFooter username={username} role={admin?.role} onLogout={logout} />
         </aside>
 
         <div className="flex min-w-0 flex-1 flex-col">
@@ -324,17 +326,17 @@ export function AppLayout() {
       {mobileOpen && (
         <div className="fixed inset-0 z-50 lg:hidden">
           <div className="absolute inset-0 bg-overlay" onClick={() => setMobileOpen(false)} />
-          <div className="absolute left-0 top-0 h-full w-72 border-r-2 border-border bg-bg p-4 animate-fade-in">
-            <div className="flex items-center justify-between">
+          <div className="absolute left-0 top-0 flex h-full w-72 max-w-[85vw] flex-col border-r-2 border-border bg-bg p-4 animate-fade-in">
+            <div className="flex shrink-0 items-center justify-between">
               <Brand />
               <Button variant="neutral" size="icon" onClick={() => setMobileOpen(false)}>
                 <X className="h-5 w-5" />
               </Button>
             </div>
-            <div className="mt-6">
+            <div className="mt-6 min-h-0 flex-1 overflow-y-auto overscroll-contain">
               <NavItems can={can} isOwner={isOwner} t={t as never} onNavigate={() => setMobileOpen(false)} />
             </div>
-            <div className="absolute inset-x-4 bottom-4">
+            <div className="mt-4 shrink-0">
               <a
                 href={GITHUB_URL}
                 target="_blank"

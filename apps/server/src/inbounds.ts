@@ -1,5 +1,5 @@
-import { nanoid } from "nanoid";
-import { db } from "./db.js";
+import { customAlphabet } from "nanoid";
+import { db, getSetting, setSetting } from "./db.js";
 import { config } from "./config.js";
 import type { Inbound, Protocol, Transport } from "./types.js";
 
@@ -17,6 +17,34 @@ const SEED_INBOUNDS: SeedDef[] = [
   { tag: "VLESS-HTTPUpgrade", protocol: "vless", transport: "httpupgrade" },
 ];
 
+const PATH_ALPHABET = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789";
+const pathPart = customAlphabet(PATH_ALPHABET, 4);
+const PATH_BASE_KEY = "path_base";
+
+/** Short random base shared by every inbound of this panel, e.g. `k7Xq`. */
+function panelPathBase(): string {
+  const existing = getSetting(PATH_BASE_KEY);
+  if (existing) return existing;
+  const base = pathPart();
+  setSetting(PATH_BASE_KEY, base);
+  return base;
+}
+
+/**
+ * Short random path for one inbound: `/api/<panel base>-<4 random>`, e.g. `/api/k7Xq-9mA3`.
+ * `api` replaces the old branded `/SideRail/<transport>-...` prefix, and the random
+ * suffix keeps every inbound unique — the tunnel routes traffic by matching this path.
+ */
+function nextInboundPath(): string {
+  const base = panelPathBase();
+  const taken = db.prepare("SELECT 1 FROM inbounds WHERE path = ?");
+  let path = `/api/${base}-${pathPart()}`;
+  for (let i = 0; i < 10 && taken.get(path); i++) {
+    path = `/api/${base}-${pathPart()}`;
+  }
+  return path;
+}
+
 export function seedInbounds(): void {
   const count = (db.prepare("SELECT COUNT(*) AS c FROM inbounds").get() as { c: number }).c;
   if (count > 0) return;
@@ -27,9 +55,24 @@ export function seedInbounds(): void {
   );
   for (const s of SEED_INBOUNDS) {
     const port = config.inboundBasePort + offset;
-    const path = `/SideRail/${s.transport}-${nanoid(8)}`;
-    insert.run(s.tag, s.protocol, s.transport, port, path, "", Date.now());
+    insert.run(s.tag, s.protocol, s.transport, port, nextInboundPath(), "", Date.now());
     offset += 1;
+  }
+}
+
+/**
+ * Rewrites legacy `/SideRail/<transport>-<id>` paths to the short `/api/` format.
+ * Only the style changes: every inbound keeps its own unique path.
+ */
+export function migrateInboundPaths(): void {
+  const rows = db.prepare("SELECT id, path FROM inbounds").all() as {
+    id: number;
+    path: string;
+  }[];
+  const update = db.prepare("UPDATE inbounds SET path = ? WHERE id = ?");
+  for (const row of rows) {
+    if (!row.path.startsWith("/SideRail/")) continue;
+    update.run(nextInboundPath(), row.id);
   }
 }
 

@@ -16,7 +16,7 @@ import express from "express";
 import cookieParser from "cookie-parser";
 import { config } from "./config.js";
 import { migrate } from "./db.js";
-import { seedInbounds } from "./inbounds.js";
+import { migrateInboundPaths, seedInbounds } from "./inbounds.js";
 import { seedDefaultClient } from "./users.js";
 import { seedDefaultRouting } from "./routing.js";
 import { api } from "./routes.js";
@@ -33,6 +33,7 @@ console.log(SIDERAIL_SIGNATURE);
 
 migrate();
 seedInbounds();
+migrateInboundPaths();
 seedDefaultClient();
 seedDefaultRouting();
 
@@ -69,10 +70,10 @@ if (fs.existsSync(staticDir)) {
 }
 
 const server = http.createServer((req, res) => {
-  if ((req.url || "").startsWith("/api") || (req.url || "").startsWith("/sub")) {
-    app(req, res);
-    return;
-  }
+  // Inbound paths share the /api prefix with the REST API (e.g. /api/k7Xq-9mA3),
+  // so the tunnel gets first refusal. Routing /api to Express first made every
+  // XHTTP plain-HTTP request 404 before it ever reached Xray. WS upgrades are
+  // unaffected, they are handled on the server's "upgrade" event below.
   if (tryTunnelHttp(req, res)) return;
   app(req, res);
 });
@@ -85,19 +86,23 @@ server.listen(config.port, config.host, async () => {
   void refreshIpInfo();
 });
 
+let loopWarnAt = 0;
+function warnLoop(name: string, err: unknown): void {
+  const now = Date.now();
+  if (now - loopWarnAt < 60_000) return;
+  loopWarnAt = now;
+  console.warn(`[${name}] ${(err as Error)?.message || err}`);
+}
+
 setInterval(() => {
-  try {
-    collectTraffic();
-  } catch {
-    /* noop */
-  }
+  collectTraffic().catch((e) => warnLoop("traffic", e));
 }, 10_000);
 
 setInterval(() => {
   try {
     collectClientIps();
-  } catch {
-    /* noop */
+  } catch (e) {
+    warnLoop("client-ips", e);
   }
 }, 5_000);
 

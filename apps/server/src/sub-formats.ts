@@ -1,4 +1,5 @@
 import type { Inbound, UserWithInbounds } from "./types.js";
+import { boldSans, configName } from "./brand.js";
 import { getSetting } from "./db.js";
 
 function cleanAddr(host: string): string {
@@ -12,6 +13,14 @@ interface Ctx {
   inbound: Inbound;
 }
 
+/**
+ * Name for Clash / Sing-box outbounds: 𝗦𝗶𝗱𝗲𝗥𝗮𝗶𝗹 - <client name> - <inbound>.
+ * The inbound tag is kept as a suffix because both formats reject duplicate names.
+ */
+function proxyName(user: UserWithInbounds, inbound: Inbound): string {
+  return `${configName(user.email)} - ${boldSans(inbound.tag)}`;
+}
+
 function net(inbound: Inbound): string {
   return inbound.transport === "xhttp" ? "xhttp" : inbound.transport;
 }
@@ -19,7 +28,7 @@ function net(inbound: Inbound): string {
 function clashProxy(ctx: Ctx): Record<string, unknown> | null {
   const { user, inbound, host } = ctx;
   const addr = cleanAddr(host);
-  const name = `${inbound.tag}`;
+  const name = proxyName(user, inbound);
   const alpn = user.alpn ? user.alpn.split(",").map((a) => a.trim()) : undefined;
   const wsOpts = {
     path: inbound.path,
@@ -111,7 +120,7 @@ export function buildClashConfig(
 function singboxOutbound(ctx: Ctx): Record<string, unknown> | null {
   const { user, inbound, host } = ctx;
   const addr = cleanAddr(host);
-  const tag = inbound.tag;
+  const tag = proxyName(user, inbound);
   const tls = {
     enabled: true,
     server_name: host,
